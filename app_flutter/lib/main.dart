@@ -73,7 +73,7 @@ class MqttController extends ChangeNotifier {
   int _lightLevel = 0;
 
   // MQTT Configuration
-  static const String _broker = 'broker.hivemq.com';
+  static const String _broker = 'test.mosquitto.org';
   static const int _port = 1883;
   static const String _topicNamespace = 'demo/room1';
   

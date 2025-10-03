@@ -12,7 +12,7 @@ from datetime import datetime
 import paho.mqtt.client as mqtt
 
 # Configuration
-MQTT_BROKER = "broker.hivemq.com"
+MQTT_BROKER = "test.mosquitto.org"
 MQTT_PORT = 1883
 TOPIC_NS = "demo/room1"
 DEVICE_ID = "esp32_simulator"
