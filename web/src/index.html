@@ -347,10 +347,7 @@
                     <span class="metric-label">Humidity</span>
                     <span id="humidity" class="metric-value">--%</span>
                 </div>
-                <div class="metric">
-                    <span class="metric-label">Light Level</span>
-                    <span id="lux" class="metric-value">-- lux</span>
-                </div>
+                <!-- Light sensor removed - using DHT11 only -->
             </div>
 
             <!-- Device Control Card -->
@@ -361,7 +358,7 @@
                     <span id="lightStatus" class="device-status device-off">OFF</span>
                 </div>
                 <div class="metric">
-                    <span class="metric-label">Fan</span>
+                    <span class="metric-label">Fan (Software Only)</span>
                     <span id="fanStatus" class="device-status device-off">OFF</span>
                 </div>
                 <div class="metric">
@@ -396,10 +393,10 @@
     <script>
         // Configuration - modify these values as needed
         const CONFIG = {
-            MQTT_HOST_WS: 'wss://test.mosquitto.org:8081/mqtt',
-            MQTT_USERNAME: '',
-            MQTT_PASSWORD: '',
-            TOPIC_NS: 'demo/room1',
+            MQTT_HOST_WS: 'ws://192.168.43.108:8083/mqtt',  // EMQX WebSocket
+            MQTT_USERNAME: 'admin',
+            MQTT_PASSWORD: 'public',
+            TOPIC_NS: 'lab/room1',  // Match với ESP32
             RECONNECT_PERIOD: 5000
         };
 
@@ -421,7 +418,7 @@
             deviceStatus: document.getElementById('deviceStatus'),
             temperature: document.getElementById('temperature'),
             humidity: document.getElementById('humidity'),
-            lux: document.getElementById('lux'),
+            // lux: removed - no light sensor
             lightStatus: document.getElementById('lightStatus'),
             fanStatus: document.getElementById('fanStatus'),
             rssi: document.getElementById('rssi'),
@@ -466,13 +463,15 @@
                 
                 if (data.temp_c !== undefined) {
                     elements.temperature.textContent = `${data.temp_c.toFixed(1)}°C`;
+                    elements.temperature.classList.add('value-animation');
+                    setTimeout(() => elements.temperature.classList.remove('value-animation'), 500);
                 }
                 if (data.hum_pct !== undefined) {
                     elements.humidity.textContent = `${data.hum_pct.toFixed(1)}%`;
+                    elements.humidity.classList.add('value-animation');
+                    setTimeout(() => elements.humidity.classList.remove('value-animation'), 500);
                 }
-                if (data.lux !== undefined) {
-                    elements.lux.textContent = `${data.lux} lux`;
-                }
+                // Light sensor removed - DHT11 only provides temp/humidity
                 
                 updateLastUpdate();
             } catch (error) {

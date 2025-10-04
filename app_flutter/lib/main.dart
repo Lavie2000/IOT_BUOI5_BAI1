@@ -70,12 +70,12 @@ class MqttController extends ChangeNotifier {
   String _lastUpdate = '--';
   double _temperature = 0.0;
   double _humidity = 0.0;
-  int _lightLevel = 0;
+  // Light sensor removed - DHT11 only provides temp/humidity
 
   // MQTT Configuration
-  static const String _broker = 'test.mosquitto.org';
+  static const String _broker = '192.168.43.108';  // EMQX Broker IP
   static const int _port = 1883;
-  static const String _topicNamespace = 'demo/room1';
+  static const String _topicNamespace = 'lab/room1';  // Match với ESP32
   
   // Getters
   bool get isConnected => _isConnected;
@@ -87,7 +87,7 @@ class MqttController extends ChangeNotifier {
   String get lastUpdate => _lastUpdate;
   double get temperature => _temperature;
   double get humidity => _humidity;
-  int get lightLevel => _lightLevel;
+  // Light level getter removed
 
   Future<void> connect() async {
     try {
@@ -103,6 +103,7 @@ class MqttController extends ChangeNotifier {
 
       final connMessage = MqttConnectMessage()
           .withClientIdentifier('flutter_mobile_${DateTime.now().millisecondsSinceEpoch}')
+          .authenticateAs('admin', 'public')  // EMQX credentials
           .startClean()
           .withWillQos(MqttQos.atLeastOnce);
       
@@ -172,7 +173,7 @@ class MqttController extends ChangeNotifier {
         } else if (topic.endsWith('/sensor/state')) {
           _temperature = (data['temp_c'] ?? 0.0).toDouble();
           _humidity = (data['hum_pct'] ?? 0.0).toDouble();
-          _lightLevel = data['lux'] ?? 0;
+          // Light level removed - DHT11 sensor only
         }
         
         notifyListeners();
@@ -353,18 +354,14 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
                                       value: '${mqtt.temperature.toStringAsFixed(1)}°C',
                                       color: Colors.red,
                                     ),
+                                    const SizedBox(width: 20),
                                     _SensorTile(
                                       icon: Icons.water_drop,
                                       label: 'Humidity',
                                       value: '${mqtt.humidity.toStringAsFixed(1)}%',
                                       color: Colors.blue,
                                     ),
-                                    _SensorTile(
-                                      icon: Icons.light_mode,
-                                      label: 'Light',
-                                      value: '${mqtt.lightLevel} lux',
-                                      color: Colors.orange,
-                                    ),
+                                    // Light sensor tile removed - DHT11 only
                                   ],
                                 ),
                               ],
@@ -397,16 +394,16 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
                           const SizedBox(height: 16),
                           
                           _ControlCard(
-                            title: '🌀 Smart Fan',
+                            title: '🌀 Smart Fan (Software Only)',
                             icon: Icons.air_rounded,
                             value: mqtt.fanState == 'on',
                             onChanged: mqtt.isConnected && mqtt.deviceOnline
                                 ? (value) {
                                     mqtt.toggleFan();
-                                    _showFeedback(context, 'Fan command sent!');
+                                    _showFeedback(context, 'Fan command sent (no hardware)!');
                                   }
                                 : null,
-                            subtitle: 'Status: ${mqtt.fanState.toUpperCase()}',
+                            subtitle: 'Status: ${mqtt.fanState.toUpperCase()} (No Hardware)',
                             activeGradient: [Colors.cyan.shade400, Colors.cyan.shade600],
                           ),
                           
