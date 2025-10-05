@@ -59,7 +59,179 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// class MqttController extends ChangeNotifier {
+//   MqttServerClient? _client;
+//   bool _isConnected = false;
+//   bool _deviceOnline = false;
+//   String _lightState = 'off';
+//   String _fanState = 'off';
+//   String _rssi = '--';
+//   String _firmware = '--';
+//   String _lastUpdate = '--';
+//   double _temperature = 0.0;
+//   double _humidity = 0.0;
+//   // Light sensor removed - DHT11 only provides temp/humidity
+
+//   // MQTT Configuration - WebSocket
+//   // static const String _broker = '10.34.136.80';  // EMQX Broker IP
+
+//   //   static const String _broker = '192.168.1.2';  // SGP
+//   // static const int _port = 8083;  // WebSocket port for EMQX
+//   // static const String _topicNamespace = 'lab/room1';  // Match với ESP32
+//   // static const String _path = '/mqtt'; // thêm dòng này
+
+//  static const String _broker = '192.168.1.2'; // địa chỉ EMQX LAN
+//   static const int _port = 8083;               // WebSocket port
+//   static const String _path = '/mqtt';         // WebSocket path
+//   static const String _topicNamespace = 'lab/room1';
+//   static const String _username = 'admin';
+//   static const String _password = 'public';
+
+//   // Getters
+//   bool get isConnected => _isConnected;
+//   bool get deviceOnline => _deviceOnline;
+//   String get lightState => _lightState;
+//   String get fanState => _fanState;
+//   String get rssi => _rssi;
+//   String get firmware => _firmware;
+//   String get lastUpdate => _lastUpdate;
+//   double get temperature => _temperature;
+//   double get humidity => _humidity;
+//   // Light level getter removed
+
+// Future<void> connect() async {
+//   try {
+//     final clientId = 'flutter_mobile_${DateTime.now().millisecondsSinceEpoch}';
+//     _client = MqttServerClient.withPort('ws://192.168.1.2/mqtt', clientId, 8083);
+
+//     _client!.useWebSocket = true; // ✅ Bắt buộc để bật WebSocket
+//     _client!.websocketProtocols = ['mqtt'];
+//     _client!.keepAlivePeriod = 60;
+//     _client!.connectTimeoutPeriod = 10000;
+//     _client!.autoReconnect = true;
+//     _client!.logging(on: true);
+
+//     _client!.onConnected = _onConnected;
+//     _client!.onDisconnected = _onDisconnected;
+//     _client!.onSubscribed = _onSubscribed;
+
+//     final connMessage = MqttConnectMessage()
+//         .withClientIdentifier(clientId)
+//         .startClean()
+//         .withWillQos(MqttQos.atLeastOnce);
+
+//     _client!.connectionMessage = connMessage;
+
+//     print('🔄 Connecting to WebSocket MQTT: ws://192.168.1.2:8083/mqtt');
+//     await _client!.connect('admin', 'public');
+
+//     if (_client!.connectionStatus!.state == MqttConnectionState.connected) {
+//       print('✅ Connected to EMQX via WebSocket');
+//       _isConnected = true;
+
+//       _client!.subscribe('lab/room1/device/state', MqttQos.atLeastOnce);
+//       _client!.subscribe('lab/room1/sensor/state', MqttQos.atMostOnce);
+//       _client!.subscribe('lab/room1/sys/online', MqttQos.atLeastOnce);
+
+//       _client!.updates!.listen(_onMessage);
+//     } else {
+//       print('⚠️ Connection failed - state: ${_client!.connectionStatus?.state}');
+//     }
+//   } catch (e) {
+//     print('❌ MQTT WebSocket connection error: $e');
+//   }
+// }
+
+//   void _onConnected() {
+//     print('✅ MQTT Connected');
+//     _isConnected = true;
+//     notifyListeners();
+//   }
+
+//   void _onDisconnected() {
+//     print('❌ MQTT Disconnected');
+//     _isConnected = false;
+//     _deviceOnline = false;
+//     notifyListeners();
+//   }
+
+//   void _onSubscribed(String topic) {
+//     print('📡 Subscribed to: $topic');
+//   }
+
+//   void _onMessage(List<MqttReceivedMessage<MqttMessage>> messages) {
+//     for (final message in messages) {
+//       final topic = message.topic;
+//       final payload = MqttPublishPayload.bytesToStringAsString(
+//         (message.payload as MqttPublishMessage).payload.message,
+//       );
+
+//       print('📥 Received [$topic]: $payload');
+
+//       try {
+//         final data = jsonDecode(payload);
+
+//         if (topic.endsWith('/device/state')) {
+//           _lightState = data['light'] ?? 'unknown';
+//           _fanState = data['fan'] ?? 'unknown';
+//           _rssi = '${data['rssi'] ?? 0} dBm';
+//           _firmware = data['fw'] ?? '--';
+//           _lastUpdate = DateTime.now().toString().substring(11, 19);
+//         } else if (topic.endsWith('/sys/online')) {
+//           _deviceOnline = data['online'] ?? false;
+//         } else if (topic.endsWith('/sensor/state')) {
+//           _temperature = (data['temp_c'] ?? 0.0).toDouble();
+//           _humidity = (data['hum_pct'] ?? 0.0).toDouble();
+//           // Light level removed - DHT11 sensor only
+//         }
+
+//         notifyListeners();
+//       } catch (e) {
+//         print('❌ Error parsing message: $e');
+//       }
+//     }
+//   }
+
+//   void sendCommand(String device, String action) {
+//     if (!_isConnected || _client == null) {
+//       print('❌ MQTT not connected');
+//       return;
+//     }
+
+//     final command = {device: action};
+//     final payload = jsonEncode(command);
+//     final topic = '$_topicNamespace/device/cmd';
+
+//     final builder = MqttClientPayloadBuilder();
+//     builder.addString(payload);
+
+//     _client!.publishMessage(topic, MqttQos.atLeastOnce, builder.payload!);
+//     print('📤 Sent command [$topic]: $payload');
+//   }
+
+//   void toggleLight() {
+//     sendCommand('light', 'toggle');
+//   }
+
+//   void toggleFan() {
+//     sendCommand('fan', 'toggle');
+//   }
+
+//   @override
+//   void dispose() {
+//     _client?.disconnect();
+//     super.dispose();
+//   }
+// }
+
 class MqttController extends ChangeNotifier {
+  static const String _broker = '192.168.1.2'; // Địa chỉ EMQX LAN
+  static const int _port = 8083; // WebSocket port
+  static const String _path = '/mqtt'; // WebSocket path
+  static const String _topicNamespace = 'lab/room1';
+  static const String _username = 'admin';
+  static const String _password = 'public';
+
   MqttServerClient? _client;
   bool _isConnected = false;
   bool _deviceOnline = false;
@@ -70,13 +242,7 @@ class MqttController extends ChangeNotifier {
   String _lastUpdate = '--';
   double _temperature = 0.0;
   double _humidity = 0.0;
-  // Light sensor removed - DHT11 only provides temp/humidity
 
-  // MQTT Configuration
-  static const String _broker = '192.168.43.108';  // EMQX Broker IP
-  static const int _port = 1883;
-  static const String _topicNamespace = 'lab/room1';  // Match với ESP32
-  
   // Getters
   bool get isConnected => _isConnected;
   bool get deviceOnline => _deviceOnline;
@@ -87,44 +253,55 @@ class MqttController extends ChangeNotifier {
   String get lastUpdate => _lastUpdate;
   double get temperature => _temperature;
   double get humidity => _humidity;
-  // Light level getter removed
 
   Future<void> connect() async {
     try {
-      _client = MqttServerClient(_broker, 'flutter_mobile_${DateTime.now().millisecondsSinceEpoch}');
-      _client!.port = _port;
+      final clientId = 'flutter_${DateTime.now().millisecondsSinceEpoch}';
+      _client = MqttServerClient.withPort(_broker, clientId, _port);
+
+      _client!.useWebSocket = true; // ✅ Bắt buộc để bật WebSocket
+      _client!.websocketProtocols = ['mqtt'];
+      // _client!.websocketPath = _path;
+      _client = MqttServerClient.withPort(
+        'ws://192.168.1.2/mqtt',
+        clientId,
+        8083,
+      );
+      _client!.useWebSocket = true;
+      _client!.websocketProtocols = ['mqtt'];
+
       _client!.keepAlivePeriod = 60;
-      _client!.connectTimeoutPeriod = 10000; // 10 seconds timeout
+      _client!.connectTimeoutPeriod = 10000;
       _client!.autoReconnect = true;
       _client!.logging(on: true);
+
       _client!.onConnected = _onConnected;
       _client!.onDisconnected = _onDisconnected;
       _client!.onSubscribed = _onSubscribed;
 
       final connMessage = MqttConnectMessage()
-          .withClientIdentifier('flutter_mobile_${DateTime.now().millisecondsSinceEpoch}')
-          .authenticateAs('admin', 'public')  // EMQX credentials
-          .startClean()
-          .withWillQos(MqttQos.atLeastOnce);
-      
+          .withClientIdentifier(clientId)
+          .withWillQos(MqttQos.atMostOnce);
+
       _client!.connectionMessage = connMessage;
 
-      print('🔄 Connecting to MQTT broker: $_broker:$_port');
-      await _client!.connect();
-      
+      print('🔄 Connecting to ws://$_broker:$_port$_path');
+      await _client!.connect(_username, _password);
+
       if (_client!.connectionStatus!.state == MqttConnectionState.connected) {
-        print('✅ Connected to MQTT broker');
+        print('✅ Connected to EMQX via WebSocket');
         _isConnected = true;
-        
-        // Subscribe to topics
-        _client!.subscribe('$_topicNamespace/device/state', MqttQos.atLeastOnce);
-        _client!.subscribe('$_topicNamespace/sys/online', MqttQos.atLeastOnce);
+
+        _client!.subscribe(
+          '$_topicNamespace/device/state',
+          MqttQos.atLeastOnce,
+        );
         _client!.subscribe('$_topicNamespace/sensor/state', MqttQos.atMostOnce);
-        
-        // Listen for messages
+        _client!.subscribe('$_topicNamespace/sys/online', MqttQos.atLeastOnce);
+
         _client!.updates!.listen(_onMessage);
-        
-        notifyListeners();
+      } else {
+        print('⚠️ Connection failed: ${_client!.connectionStatus}');
       }
     } catch (e) {
       print('❌ MQTT connection error: $e');
@@ -156,12 +333,11 @@ class MqttController extends ChangeNotifier {
       final payload = MqttPublishPayload.bytesToStringAsString(
         (message.payload as MqttPublishMessage).payload.message,
       );
-      
+
       print('📥 Received [$topic]: $payload');
-      
       try {
         final data = jsonDecode(payload);
-        
+
         if (topic.endsWith('/device/state')) {
           _lightState = data['light'] ?? 'unknown';
           _fanState = data['fan'] ?? 'unknown';
@@ -173,9 +349,8 @@ class MqttController extends ChangeNotifier {
         } else if (topic.endsWith('/sensor/state')) {
           _temperature = (data['temp_c'] ?? 0.0).toDouble();
           _humidity = (data['hum_pct'] ?? 0.0).toDouble();
-          // Light level removed - DHT11 sensor only
         }
-        
+
         notifyListeners();
       } catch (e) {
         print('❌ Error parsing message: $e');
@@ -189,24 +364,18 @@ class MqttController extends ChangeNotifier {
       return;
     }
 
-    final command = {device: action};
-    final payload = jsonEncode(command);
-    final topic = '$_topicNamespace/device/cmd';
-    
-    final builder = MqttClientPayloadBuilder();
-    builder.addString(payload);
-    
-    _client!.publishMessage(topic, MqttQos.atLeastOnce, builder.payload!);
-    print('📤 Sent command [$topic]: $payload');
+    final payload = jsonEncode({device: action});
+    final builder = MqttClientPayloadBuilder()..addString(payload);
+    _client!.publishMessage(
+      '$_topicNamespace/device/cmd',
+      MqttQos.atLeastOnce,
+      builder.payload!,
+    );
+    print('📤 Sent command: $payload');
   }
 
-  void toggleLight() {
-    sendCommand('light', 'toggle');
-  }
-
-  void toggleFan() {
-    sendCommand('fan', 'toggle');
-  }
+  void toggleLight() => sendCommand('light', 'toggle');
+  void toggleFan() => sendCommand('fan', 'toggle');
 
   @override
   void dispose() {
@@ -276,12 +445,21 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
                         Expanded(
                           child: _StatusCard(
                             title: 'MQTT Broker',
-                            status: mqtt.isConnected ? 'Connected' : 'Connecting...',
-                            color: mqtt.isConnected ? Colors.green : Colors.orange,
-                            icon: mqtt.isConnected ? Icons.wifi : Icons.wifi_off,
-                            gradient: mqtt.isConnected 
-                              ? [Colors.green.shade400, Colors.green.shade600]
-                              : [Colors.orange.shade400, Colors.orange.shade600],
+                            status: mqtt.isConnected
+                                ? 'Connected'
+                                : 'Connecting...',
+                            color: mqtt.isConnected
+                                ? Colors.green
+                                : Colors.orange,
+                            icon: mqtt.isConnected
+                                ? Icons.wifi
+                                : Icons.wifi_off,
+                            gradient: mqtt.isConnected
+                                ? [Colors.green.shade400, Colors.green.shade600]
+                                : [
+                                    Colors.orange.shade400,
+                                    Colors.orange.shade600,
+                                  ],
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -289,18 +467,22 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
                           child: _StatusCard(
                             title: 'ESP32 Device',
                             status: mqtt.deviceOnline ? 'Online' : 'Offline',
-                            color: mqtt.deviceOnline ? Colors.blue : Colors.grey,
-                            icon: mqtt.deviceOnline ? Icons.developer_board : Icons.developer_board_off,
-                            gradient: mqtt.deviceOnline 
-                              ? [Colors.blue.shade400, Colors.blue.shade600]
-                              : [Colors.grey.shade400, Colors.grey.shade600],
+                            color: mqtt.deviceOnline
+                                ? Colors.blue
+                                : Colors.grey,
+                            icon: mqtt.deviceOnline
+                                ? Icons.developer_board
+                                : Icons.developer_board_off,
+                            gradient: mqtt.deviceOnline
+                                ? [Colors.blue.shade400, Colors.blue.shade600]
+                                : [Colors.grey.shade400, Colors.grey.shade600],
                           ),
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Sensor Data Card
                     if (mqtt.deviceOnline) ...[
                       Card(
@@ -332,33 +514,43 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
                                         color: Colors.green.shade100,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: Icon(Icons.sensors, color: Colors.green.shade700, size: 20),
+                                      child: Icon(
+                                        Icons.sensors,
+                                        color: Colors.green.shade700,
+                                        size: 20,
+                                      ),
                                     ),
                                     const SizedBox(width: 12),
                                     Text(
                                       'Sensor Data',
-                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.green.shade800,
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.green.shade800,
+                                          ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 16),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
                                   children: [
                                     _SensorTile(
                                       icon: Icons.thermostat,
                                       label: 'Temperature',
-                                      value: '${mqtt.temperature.toStringAsFixed(1)}°C',
+                                      value:
+                                          '${mqtt.temperature.toStringAsFixed(1)}°C',
                                       color: Colors.red,
                                     ),
                                     const SizedBox(width: 20),
                                     _SensorTile(
                                       icon: Icons.water_drop,
                                       label: 'Humidity',
-                                      value: '${mqtt.humidity.toStringAsFixed(1)}%',
+                                      value:
+                                          '${mqtt.humidity.toStringAsFixed(1)}%',
                                       color: Colors.blue,
                                     ),
                                     // Light sensor tile removed - DHT11 only
@@ -369,10 +561,10 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 16),
                     ],
-                    
+
                     // Control Cards with modern design
                     Expanded(
                       child: Column(
@@ -384,15 +576,22 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
                             onChanged: mqtt.isConnected && mqtt.deviceOnline
                                 ? (value) {
                                     mqtt.toggleLight();
-                                    _showFeedback(context, 'Light command sent!');
+                                    _showFeedback(
+                                      context,
+                                      'Light command sent!',
+                                    );
                                   }
                                 : null,
-                            subtitle: 'Status: ${mqtt.lightState.toUpperCase()}',
-                            activeGradient: [Colors.orange.shade400, Colors.orange.shade600],
+                            subtitle:
+                                'Status: ${mqtt.lightState.toUpperCase()}',
+                            activeGradient: [
+                              Colors.orange.shade400,
+                              Colors.orange.shade600,
+                            ],
                           ),
-                          
+
                           const SizedBox(height: 16),
-                          
+
                           _ControlCard(
                             title: '🌀 Smart Fan (Software Only)',
                             icon: Icons.air_rounded,
@@ -400,15 +599,22 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
                             onChanged: mqtt.isConnected && mqtt.deviceOnline
                                 ? (value) {
                                     mqtt.toggleFan();
-                                    _showFeedback(context, 'Fan command sent (no hardware)!');
+                                    _showFeedback(
+                                      context,
+                                      'Fan command sent (no hardware)!',
+                                    );
                                   }
                                 : null,
-                            subtitle: 'Status: ${mqtt.fanState.toUpperCase()} (No Hardware)',
-                            activeGradient: [Colors.cyan.shade400, Colors.cyan.shade600],
+                            subtitle:
+                                'Status: ${mqtt.fanState.toUpperCase()} (No Hardware)',
+                            activeGradient: [
+                              Colors.cyan.shade400,
+                              Colors.cyan.shade600,
+                            ],
                           ),
-                          
+
                           const SizedBox(height: 24),
-                          
+
                           // Enhanced Device Info Card
                           Card(
                             elevation: 8,
@@ -437,17 +643,26 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
                                           padding: const EdgeInsets.all(8),
                                           decoration: BoxDecoration(
                                             color: Colors.purple.shade100,
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
-                                          child: Icon(Icons.info_rounded, color: Colors.purple.shade700, size: 20),
+                                          child: Icon(
+                                            Icons.info_rounded,
+                                            color: Colors.purple.shade700,
+                                            size: 20,
+                                          ),
                                         ),
                                         const SizedBox(width: 12),
                                         Text(
                                           'Device Information',
-                                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.purple.shade800,
-                                          ),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.purple.shade800,
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -463,7 +678,7 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
                         ],
                       ),
                     ),
-                    
+
                     // Connection status info
                     if (!mqtt.isConnected)
                       Container(
@@ -489,7 +704,7 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
                           ],
                         ),
                       ),
-                      
+
                     // Sync status indicator
                     if (mqtt.isConnected && mqtt.deviceOnline)
                       Container(
@@ -502,11 +717,18 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.sync, color: Colors.green.shade700, size: 16),
+                            Icon(
+                              Icons.sync,
+                              color: Colors.green.shade700,
+                              size: 16,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'Synced with IoT System',
-                              style: TextStyle(color: Colors.green.shade700, fontWeight: FontWeight.w500),
+                              style: TextStyle(
+                                color: Colors.green.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ],
                         ),
@@ -538,7 +760,7 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            label, 
+            label,
             style: TextStyle(
               fontWeight: FontWeight.w600,
               color: Colors.purple.shade700,
@@ -552,7 +774,7 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              value, 
+              value,
               style: TextStyle(
                 color: Colors.purple.shade800,
                 fontWeight: FontWeight.w500,
@@ -658,22 +880,24 @@ class _ControlCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: value ? 8 : 4,
-      shadowColor: value ? activeGradient.first.withOpacity(0.3) : Colors.black.withOpacity(0.1),
+      shadowColor: value
+          ? activeGradient.first.withOpacity(0.3)
+          : Colors.black.withOpacity(0.1),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          gradient: value 
-            ? LinearGradient(
-                colors: activeGradient,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-            : LinearGradient(
-                colors: [Colors.grey.shade100, Colors.grey.shade200],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+          gradient: value
+              ? LinearGradient(
+                  colors: activeGradient,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : LinearGradient(
+                  colors: [Colors.grey.shade100, Colors.grey.shade200],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
         ),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -682,7 +906,9 @@ class _ControlCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: value ? Colors.white.withOpacity(0.2) : Colors.grey.shade300,
+                  color: value
+                      ? Colors.white.withOpacity(0.2)
+                      : Colors.grey.shade300,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
