@@ -225,7 +225,9 @@ class MyApp extends StatelessWidget {
 // }
 
 class MqttController extends ChangeNotifier {
-  static const String _broker = '192.168.1.2'; // Địa chỉ EMQX LAN
+  // static const String _broker = '192.168.1.3'; // Địa chỉ EMQX LAN
+  static const String _broker = '192.168.43.108'; // 3q1
+
   static const int _port = 8083; // WebSocket port
   static const String _path = '/mqtt'; // WebSocket path
   static const String _topicNamespace = 'lab/room1';
@@ -263,7 +265,9 @@ class MqttController extends ChangeNotifier {
       _client!.websocketProtocols = ['mqtt'];
       // _client!.websocketPath = _path;
       _client = MqttServerClient.withPort(
-        'ws://192.168.1.2/mqtt',
+        // 'ws://192.168.1.3/mqtt',
+        'ws://192.168.43.108/mqtt',
+
         clientId,
         8083,
       );
@@ -448,12 +452,10 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
                             status: mqtt.isConnected
                                 ? 'Connected'
                                 : 'Connecting...',
-                            color: mqtt.isConnected
-                                ? Colors.green
-                                : Colors.orange,
-                            icon: mqtt.isConnected
-                                ? Icons.wifi
-                                : Icons.wifi_off,
+                            color:
+                                mqtt.isConnected ? Colors.green : Colors.orange,
+                            icon:
+                                mqtt.isConnected ? Icons.wifi : Icons.wifi_off,
                             gradient: mqtt.isConnected
                                 ? [Colors.green.shade400, Colors.green.shade600]
                                 : [
@@ -467,9 +469,8 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
                           child: _StatusCard(
                             title: 'ESP32 Device',
                             status: mqtt.deviceOnline ? 'Online' : 'Offline',
-                            color: mqtt.deviceOnline
-                                ? Colors.blue
-                                : Colors.grey,
+                            color:
+                                mqtt.deviceOnline ? Colors.blue : Colors.grey,
                             icon: mqtt.deviceOnline
                                 ? Icons.developer_board
                                 : Icons.developer_board_off,
@@ -561,7 +562,6 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 16),
                     ],
 
