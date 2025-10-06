@@ -439,71 +439,206 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
               ),
             ),
             child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    // Status Cards with enhanced design
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _StatusCard(
-                            title: 'MQTT Broker',
-                            status: mqtt.isConnected
-                                ? 'Connected'
-                                : 'Connecting...',
-                            color:
-                                mqtt.isConnected ? Colors.green : Colors.orange,
-                            icon:
-                                mqtt.isConnected ? Icons.wifi : Icons.wifi_off,
-                            gradient: mqtt.isConnected
-                                ? [Colors.green.shade400, Colors.green.shade600]
-                                : [
-                                    Colors.orange.shade400,
-                                    Colors.orange.shade600,
-                                  ],
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      // Status Cards with enhanced design
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _StatusCard(
+                              title: 'MQTT Broker',
+                              status: mqtt.isConnected
+                                  ? 'Connected'
+                                  : 'Connecting...',
+                              color: mqtt.isConnected
+                                  ? Colors.green
+                                  : Colors.orange,
+                              icon: mqtt.isConnected
+                                  ? Icons.wifi
+                                  : Icons.wifi_off,
+                              gradient: mqtt.isConnected
+                                  ? [
+                                      Colors.green.shade400,
+                                      Colors.green.shade600,
+                                    ]
+                                  : [
+                                      Colors.orange.shade400,
+                                      Colors.orange.shade600,
+                                    ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _StatusCard(
+                              title: 'ESP32 Device',
+                              status: mqtt.deviceOnline ? 'Online' : 'Offline',
+                              color:
+                                  mqtt.deviceOnline ? Colors.blue : Colors.grey,
+                              icon: mqtt.deviceOnline
+                                  ? Icons.developer_board
+                                  : Icons.developer_board_off,
+                              gradient: mqtt.deviceOnline
+                                  ? [Colors.blue.shade400, Colors.blue.shade600]
+                                  : [
+                                      Colors.grey.shade400,
+                                      Colors.grey.shade600,
+                                    ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Sensor Data Card
+                      if (mqtt.deviceOnline) ...[
+                        Card(
+                          elevation: 6,
+                          shadowColor: Colors.green.withOpacity(0.3),
+                          child: Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.green.shade50,
+                                  Colors.teal.shade50,
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green.shade100,
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: Icon(
+                                          Icons.sensors,
+                                          color: Colors.green.shade700,
+                                          size: 18,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        'Sensor Data',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.green.shade800,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceAround,
+                                    children: [
+                                      _SensorTile(
+                                        icon: Icons.thermostat,
+                                        label: 'Temperature',
+                                        value:
+                                            '${mqtt.temperature.toStringAsFixed(1)}°C',
+                                        color: Colors.red,
+                                      ),
+                                      const SizedBox(width: 20),
+                                      _SensorTile(
+                                        icon: Icons.water_drop,
+                                        label: 'Humidity',
+                                        value:
+                                            '${mqtt.humidity.toStringAsFixed(1)}%',
+                                        color: Colors.blue,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _StatusCard(
-                            title: 'ESP32 Device',
-                            status: mqtt.deviceOnline ? 'Online' : 'Offline',
-                            color:
-                                mqtt.deviceOnline ? Colors.blue : Colors.grey,
-                            icon: mqtt.deviceOnline
-                                ? Icons.developer_board
-                                : Icons.developer_board_off,
-                            gradient: mqtt.deviceOnline
-                                ? [Colors.blue.shade400, Colors.blue.shade600]
-                                : [Colors.grey.shade400, Colors.grey.shade600],
-                          ),
-                        ),
+                        const SizedBox(height: 16),
                       ],
-                    ),
 
-                    const SizedBox(height: 24),
+                      // Control Cards with modern design
+                      _ControlCard(
+                        title: '💡 Smart Light',
+                        icon: Icons.lightbulb_rounded,
+                        value: mqtt.lightState == 'on',
+                        onChanged: mqtt.isConnected && mqtt.deviceOnline
+                            ? (value) {
+                                mqtt.toggleLight();
+                                _showFeedback(
+                                  context,
+                                  'Light command sent!',
+                                );
+                              }
+                            : null,
+                        subtitle: 'Status: ${mqtt.lightState.toUpperCase()}',
+                        activeGradient: [
+                          Colors.orange.shade400,
+                          Colors.orange.shade600,
+                        ],
+                      ),
 
-                    // Sensor Data Card
-                    if (mqtt.deviceOnline) ...[
+                      const SizedBox(height: 12),
+
+                      _ControlCard(
+                        title: '🌀 Smart Fan',
+                        icon: Icons.air_rounded,
+                        value: mqtt.fanState == 'on',
+                        onChanged: mqtt.isConnected && mqtt.deviceOnline
+                            ? (value) {
+                                mqtt.toggleFan();
+                                _showFeedback(
+                                  context,
+                                  'Fan command sent!',
+                                );
+                              }
+                            : null,
+                        subtitle:
+                            'Status: ${mqtt.fanState.toUpperCase()} (Software)',
+                        activeGradient: [
+                          Colors.cyan.shade400,
+                          Colors.cyan.shade600,
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Enhanced Device Info Card
                       Card(
                         elevation: 6,
-                        shadowColor: Colors.green.withOpacity(0.3),
+                        shadowColor: Colors.purple.withOpacity(0.3),
                         child: Container(
                           width: double.infinity,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
                             gradient: LinearGradient(
                               colors: [
-                                Colors.green.shade50,
-                                Colors.teal.shade50,
+                                Colors.purple.shade50,
+                                Colors.blue.shade50,
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.all(20.0),
+                            padding: const EdgeInsets.all(16.0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -512,228 +647,102 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: Colors.green.shade100,
+                                        color: Colors.purple.shade100,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Icon(
-                                        Icons.sensors,
-                                        color: Colors.green.shade700,
-                                        size: 20,
+                                        Icons.info_rounded,
+                                        color: Colors.purple.shade700,
+                                        size: 18,
                                       ),
                                     ),
                                     const SizedBox(width: 12),
                                     Text(
-                                      'Sensor Data',
+                                      'Device Information',
                                       style: Theme.of(context)
                                           .textTheme
-                                          .titleLarge
+                                          .titleMedium
                                           ?.copyWith(
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.green.shade800,
+                                            color: Colors.purple.shade800,
                                           ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 16),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceAround,
-                                  children: [
-                                    _SensorTile(
-                                      icon: Icons.thermostat,
-                                      label: 'Temperature',
-                                      value:
-                                          '${mqtt.temperature.toStringAsFixed(1)}°C',
-                                      color: Colors.red,
-                                    ),
-                                    const SizedBox(width: 20),
-                                    _SensorTile(
-                                      icon: Icons.water_drop,
-                                      label: 'Humidity',
-                                      value:
-                                          '${mqtt.humidity.toStringAsFixed(1)}%',
-                                      color: Colors.blue,
-                                    ),
-                                    // Light sensor tile removed - DHT11 only
-                                  ],
-                                ),
+                                const SizedBox(height: 12),
+                                _InfoRow('📡 WiFi Signal', mqtt.rssi),
+                                _InfoRow('💿 Firmware', mqtt.firmware),
+                                _InfoRow('⏰ Last Update', mqtt.lastUpdate),
                               ],
                             ),
                           ),
                         ),
                       ),
+
+                      const SizedBox(height: 16),
+
+                      // Connection status info
+                      if (!mqtt.isConnected)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.orange.shade300),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  'Connecting to MQTT broker...',
+                                  style:
+                                      TextStyle(color: Colors.orange.shade700),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      // Sync status indicator
+                      if (mqtt.isConnected && mqtt.deviceOnline)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.green.shade300),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.sync,
+                                color: Colors.green.shade700,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Synced with IoT System',
+                                style: TextStyle(
+                                  color: Colors.green.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
                       const SizedBox(height: 16),
                     ],
-
-                    // Control Cards with modern design
-                    Expanded(
-                      child: Column(
-                        children: [
-                          _ControlCard(
-                            title: '💡 Smart Light',
-                            icon: Icons.lightbulb_rounded,
-                            value: mqtt.lightState == 'on',
-                            onChanged: mqtt.isConnected && mqtt.deviceOnline
-                                ? (value) {
-                                    mqtt.toggleLight();
-                                    _showFeedback(
-                                      context,
-                                      'Light command sent!',
-                                    );
-                                  }
-                                : null,
-                            subtitle:
-                                'Status: ${mqtt.lightState.toUpperCase()}',
-                            activeGradient: [
-                              Colors.orange.shade400,
-                              Colors.orange.shade600,
-                            ],
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          _ControlCard(
-                            title: '🌀 Smart Fan (Software Only)',
-                            icon: Icons.air_rounded,
-                            value: mqtt.fanState == 'on',
-                            onChanged: mqtt.isConnected && mqtt.deviceOnline
-                                ? (value) {
-                                    mqtt.toggleFan();
-                                    _showFeedback(
-                                      context,
-                                      'Fan command sent (no hardware)!',
-                                    );
-                                  }
-                                : null,
-                            subtitle:
-                                'Status: ${mqtt.fanState.toUpperCase()} (No Hardware)',
-                            activeGradient: [
-                              Colors.cyan.shade400,
-                              Colors.cyan.shade600,
-                            ],
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // Enhanced Device Info Card
-                          Card(
-                            elevation: 8,
-                            shadowColor: Colors.purple.withOpacity(0.3),
-                            child: Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.purple.shade50,
-                                    Colors.blue.shade50,
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(20.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: Colors.purple.shade100,
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                          child: Icon(
-                                            Icons.info_rounded,
-                                            color: Colors.purple.shade700,
-                                            size: 20,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Text(
-                                          'Device Information',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleLarge
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.purple.shade800,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    _InfoRow('📡 WiFi Signal', mqtt.rssi),
-                                    _InfoRow('💿 Firmware', mqtt.firmware),
-                                    _InfoRow('⏰ Last Update', mqtt.lastUpdate),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Connection status info
-                    if (!mqtt.isConnected)
-                      Container(
-                        margin: const EdgeInsets.only(top: 16),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.orange.shade300),
-                        ),
-                        child: Row(
-                          children: [
-                            const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Connecting to MQTT broker...',
-                              style: TextStyle(color: Colors.orange.shade700),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                    // Sync status indicator
-                    if (mqtt.isConnected && mqtt.deviceOnline)
-                      Container(
-                        margin: const EdgeInsets.only(top: 16),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.green.shade300),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.sync,
-                              color: Colors.green.shade700,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Synced with IoT System',
-                              style: TextStyle(
-                                color: Colors.green.shade700,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -900,11 +909,11 @@ class _ControlCard extends StatelessWidget {
                 ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(16.0),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: value
                       ? Colors.white.withOpacity(0.2)
@@ -914,35 +923,41 @@ class _ControlCard extends StatelessWidget {
                 child: Icon(
                   icon,
                   color: value ? Colors.white : Colors.grey.shade600,
-                  size: 28,
+                  size: 24,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       title,
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: value ? Colors.white : Colors.grey.shade800,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       subtitle,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 12,
                         color: value ? Colors.white70 : Colors.grey.shade600,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               Transform.scale(
-                scale: 1.2,
+                scale: 1.1,
                 child: Switch(
                   value: value,
                   onChanged: onChanged,
