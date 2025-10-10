@@ -77,6 +77,10 @@ class MqttController extends ChangeNotifier {
   MqttServerClient? _client;
   bool _isConnected = false;
   bool _deviceOnline = false;
+  
+  // Debouncing: prevent multiple rapid commands
+  DateTime? _lastCommandTime;
+  static const Duration _commandCooldown = Duration(milliseconds: 500);
   String _lightState = 'off';
   String _fanState = 'off';
   String _rssi = '--';
@@ -209,6 +213,15 @@ class MqttController extends ChangeNotifier {
       return;
     }
 
+    // Debouncing: prevent multiple commands within cooldown period
+    final now = DateTime.now();
+    if (_lastCommandTime != null && 
+        now.difference(_lastCommandTime!) < _commandCooldown) {
+      print('⏱️ Command ignored (cooldown active)');
+      return;
+    }
+    _lastCommandTime = now;
+
     final payload = jsonEncode({device: action});
     final builder = MqttClientPayloadBuilder()..addString(payload);
     _client!.publishMessage(
@@ -238,8 +251,17 @@ class MqttController extends ChangeNotifier {
     }
   }
 
-  void toggleLight() => sendCommand('light', 'toggle');
-  void toggleFan() => sendCommand('fan', 'toggle');
+  void toggleLight() {
+    // Send explicit command based on current state
+    final newState = _lightState == 'on' ? 'off' : 'on';
+    sendCommand('light', newState);
+  }
+  
+  void toggleFan() {
+    // Send explicit command based on current state
+    final newState = _fanState == 'on' ? 'off' : 'on';
+    sendCommand('fan', newState);
+  }
 
   @override
   void dispose() {

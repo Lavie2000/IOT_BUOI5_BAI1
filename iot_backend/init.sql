@@ -34,6 +34,18 @@ CREATE TABLE IF NOT EXISTS command_history (
 );
 
 -- ==========================================
+-- Table: sensor_data
+-- ==========================================
+CREATE TABLE IF NOT EXISTS sensor_data (
+    id BIGSERIAL PRIMARY KEY,
+    device_id VARCHAR(100) NOT NULL,
+    temperature DECIMAL(5,2),
+    humidity DECIMAL(5,2),
+    light_level INTEGER,
+    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ==========================================
 -- Indexes for performance
 -- ==========================================
 CREATE INDEX IF NOT EXISTS idx_device_id ON devices(device_id);
@@ -42,6 +54,8 @@ CREATE INDEX IF NOT EXISTS idx_device_type ON devices(device_type);
 CREATE INDEX IF NOT EXISTS idx_command_device ON command_history(device_id);
 CREATE INDEX IF NOT EXISTS idx_command_time ON command_history(executed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_command_source ON command_history(source);
+CREATE INDEX IF NOT EXISTS idx_sensor_device ON sensor_data(device_id);
+CREATE INDEX IF NOT EXISTS idx_sensor_time ON sensor_data(recorded_at DESC);
 
 -- ==========================================
 -- Insert sample data

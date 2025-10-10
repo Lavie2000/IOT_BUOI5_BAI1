@@ -39,8 +39,14 @@ public class MqttService {
     @Value("${mqtt.topic.device-cmd}")
     private String topicDeviceCmd;
     
+    @Value("${mqtt.topic.sensor-state}")
+    private String topicSensorState;
+    
     @Autowired
     private DeviceService deviceService;
+    
+    @Autowired
+    private SensorDataService sensorDataService;
     
     private MqttClient mqttClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -80,10 +86,12 @@ public class MqttService {
             // Subscribe to topics
             mqttClient.subscribe(topicDeviceState, 1);
             mqttClient.subscribe(topicSysOnline, 1);
+            mqttClient.subscribe(topicSensorState, 0); // QoS 0 for sensor data
             
             logger.info("✅ MQTT Backend connected successfully to {}", brokerUrl);
             logger.info("   Subscribed to: {}", topicDeviceState);
             logger.info("   Subscribed to: {}", topicSysOnline);
+            logger.info("   Subscribed to: {}", topicSensorState);
             
         } catch (Exception e) {
             logger.error("Failed to connect to MQTT broker: {}", e.getMessage(), e);
@@ -100,6 +108,9 @@ public class MqttService {
             if (topic.equals(topicDeviceState)) {
                 // Update device state in database
                 deviceService.updateDeviceState(data);
+            } else if (topic.equals(topicSensorState)) {
+                // Save sensor data to database
+                saveSensorData(data);
             } else if (topic.equals(topicSysOnline)) {
                 // Update online status
                 deviceService.updateOnlineStatus(data);
@@ -129,6 +140,28 @@ public class MqttService {
             
         } catch (Exception e) {
             logger.error("Error publishing command: {}", e.getMessage(), e);
+        }
+    }
+    
+    private void saveSensorData(Map<String, Object> data) {
+        try {
+            // Extract sensor values from MQTT payload
+            // Expected format: {"temp_c": 25.5, "hum_pct": 60.0, "ts": 123456}
+            Number tempNum = (Number) data.get("temp_c");
+            Number humNum = (Number) data.get("hum_pct");
+            
+            if (tempNum != null && humNum != null) {
+                java.math.BigDecimal temperature = java.math.BigDecimal.valueOf(tempNum.doubleValue());
+                java.math.BigDecimal humidity = java.math.BigDecimal.valueOf(humNum.doubleValue());
+                
+                // Assume device_id is esp32_demo_001 (can be extracted from topic if needed)
+                String deviceId = "esp32_demo_001";
+                
+                sensorDataService.saveSensorData(deviceId, temperature, humidity, null);
+                logger.debug("Saved sensor data: temp={}, hum={}", temperature, humidity);
+            }
+        } catch (Exception e) {
+            logger.error("Error saving sensor data: {}", e.getMessage());
         }
     }
     
