@@ -319,6 +319,120 @@
             font-style: italic;
             padding: 20px;
         }
+
+        /* Control Section Styles */
+        .control-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 8px;
+        }
+
+        .control-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(100, 116, 139, 0.05);
+            border-radius: 8px;
+        }
+
+        .control-label {
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 6px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+
+        /* Device List Styles */
+        .device-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            background: rgba(100, 116, 139, 0.05);
+            border-radius: 8px;
+        }
+
+        .device-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .device-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: #1e293b;
+        }
+
+        .device-id, .device-location {
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .device-status-badges {
+            display: flex;
+            gap: 6px;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-gray {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .badge-green {
+            background: #d1fae5;
+            color: #047857;
+        }
     </style>
 </head>
 <body>
@@ -383,10 +497,41 @@
                     <span id="lastUpdate" class="metric-value">--</span>
                 </div>
             </div>
+
+            <!-- Device Control Card (NEW) -->
+            <div class="card">
+                <h3><span class="icon">🎛️</span> Device Control</h3>
+                <div class="control-section">
+                    <div class="control-item">
+                        <span class="control-label">💡 Smart Light</span>
+                        <div class="button-group">
+                            <button class="btn btn-success" onclick="sendCommand('light', 'on')">ON</button>
+                            <button class="btn btn-danger" onclick="sendCommand('light', 'off')">OFF</button>
+                            <button class="btn btn-primary" onclick="sendCommand('light', 'toggle')">TOGGLE</button>
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-label">🌀 Smart Fan</span>
+                        <div class="button-group">
+                            <button class="btn btn-success" onclick="sendCommand('fan', 'on')">ON</button>
+                            <button class="btn btn-danger" onclick="sendCommand('fan', 'off')">OFF</button>
+                            <button class="btn btn-primary" onclick="sendCommand('fan', 'toggle')">TOGGLE</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Registered Devices Card (NEW) -->
+            <div class="card">
+                <h3><span class="icon">📋</span> Registered Devices</h3>
+                <div id="device-list">
+                    <div class="no-data">Loading devices...</div>
+                </div>
+            </div>
         </div>
 
         <div class="timestamp">
-            <small>Real-time monitoring via MQTT WebSocket</small>
+            <small>Real-time monitoring & control via MQTT WebSocket + REST API</small>
         </div>
     </div>
 
@@ -396,6 +541,8 @@
             // MQTT_HOST_WS: 'ws://10.34.136.80:8083/mqtt',  // EMQX WebSocket
             // MQTT_HOST_WS: 'ws://192.168.1.3:8083/mqtt',  // EMQX WebSocket
             MQTT_HOST_WS: 'ws://192.168.43.108:8083/mqtt',
+            // MQTT_HOST_WS: 'ws://192.168.1.4:8083/mqtt',
+
             MQTT_USERNAME: 'admin',
             MQTT_PASSWORD: 'public',
             TOPIC_NS: 'lab/room1',  // Match với ESP32
@@ -599,11 +746,91 @@
             }, CONFIG.RECONNECT_PERIOD);
         }
 
+        // Send command function (NEW)
+        function sendCommand(device, action) {
+            const command = { [device]: action };
+            
+            // Publish MQTT command
+            if (mqttClient && mqttClient.connected) {
+                mqttClient.publish(
+                    `${CONFIG.TOPIC_NS}/device/cmd`,
+                    JSON.stringify(command),
+                    { qos: 1 }
+                );
+                console.log(`📤 Command sent via MQTT: ${device} → ${action}`);
+            }
+            
+            // Log to database via API
+            fetch('http://192.168.43.108:8888/api/devices/esp32_demo_001/control', {
+            // fetch('http://192.168.1.4:8888/api/devices/esp32_demo_001/control', {
+
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    command: action,
+                    deviceType: device,
+                    source: 'web_dashboard'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('✅ Command logged to database:', data);
+            })
+            .catch(error => {
+                console.error('❌ Failed to log command:', error);
+            });
+        }
+
+        // Load devices from API (NEW)
+        async function loadDevices() {
+            try {
+                const response = await fetch('http://192.168.43.108:8888/api/devices');
+                // const response = await fetch('http://192.168.1.4:8888/api/devices');
+
+                const devices = await response.json();
+                
+                const deviceList = document.getElementById('device-list');
+                
+                if (devices.length === 0) {
+                    deviceList.innerHTML = '<div class="no-data">No devices registered yet</div>';
+                    return;
+                }
+                
+                deviceList.innerHTML = devices.map(device => `
+                    <div class="device-item">
+                        <div class="device-info">
+                            <span class="device-name">${device.deviceName}</span>
+                            <span class="device-id">ID: ${device.deviceId}</span>
+                            <span class="device-location">📍 ${device.location || 'Unknown'}</span>
+                        </div>
+                        <div class="device-status-badges">
+                            <span class="badge ${device.status === 'online' ? 'badge-success' : 'badge-gray'}">
+                                ${device.status}
+                            </span>
+                            <span class="badge ${device.currentState === 'on' ? 'badge-green' : 'badge-gray'}">
+                                ${device.currentState || 'unknown'}
+                            </span>
+                        </div>
+                    </div>
+                `).join('');
+                
+                console.log(`📋 Loaded ${devices.length} devices from database`);
+            } catch (error) {
+                console.error('❌ Error loading devices:', error);
+                document.getElementById('device-list').innerHTML = 
+                    '<div class="no-data">Failed to load devices</div>';
+            }
+        }
+
         // Initialize on page load
         window.addEventListener('load', function() {
             console.log('IoT Monitor Web App starting...');
             console.log('Config:', CONFIG);
             connectMQTT();
+            loadDevices();
+            
+            // Refresh device list every 10 seconds
+            setInterval(loadDevices, 10000);
         });
 
         // Cleanup on page unload

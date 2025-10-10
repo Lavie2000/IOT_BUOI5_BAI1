@@ -9,11 +9,14 @@
 // =============================================================================
 
 // WiFi Configuration
-const char* WIFI_SSID = "3q1";
-const char* WIFI_PASSWORD = "12101210";
+// const char* WIFI_SSID = "3q1";
+// const char* WIFI_PASSWORD = "12101210";
 
+const char* WIFI_SSID = "SGP";
+const char* WIFI_PASSWORD = "12100204";
 // MQTT Broker Configuration
-const char* MQTT_HOST = "192.168.43.108";
+// const char* MQTT_HOST = "192.168.43.108"; //3q1
+const char* MQTT_HOST = "192.168.1.4"; //SGP
 const int MQTT_PORT = 1883;
 const char* MQTT_USERNAME = "admin";
 const char* MQTT_PASSWORD = "public";

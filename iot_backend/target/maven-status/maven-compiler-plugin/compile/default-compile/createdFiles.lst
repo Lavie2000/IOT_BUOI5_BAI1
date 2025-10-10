@@ -1,0 +1,12 @@
+com\iot\backend\repository\CommandHistoryRepository.class
+com\iot\backend\service\MqttService$1.class
+com\iot\backend\config\CorsConfig$1.class
+com\iot\backend\config\CorsConfig.class
+com\iot\backend\controller\CommandHistoryController.class
+com\iot\backend\service\DeviceService.class
+com\iot\backend\model\Device.class
+com\iot\backend\BackendApplication.class
+com\iot\backend\model\CommandHistory.class
+com\iot\backend\controller\DeviceController.class
+com\iot\backend\repository\DeviceRepository.class
+com\iot\backend\service\MqttService.class

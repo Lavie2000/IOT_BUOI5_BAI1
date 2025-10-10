@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: iot-backend-api
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/iot_smart_home
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+server:
+  port: 8888
+
+mqtt:
+  broker-url: tcp://192.168.43.108:1883
+  # broker-url: tcp://192.168.1.4:1883
+  username: admin
+  password: public
+  client-id: spring_backend
+  topic:
+    namespace: lab/room1
+    device-state: lab/room1/device/state
+    device-cmd: lab/room1/device/cmd
+    sensor-state: lab/room1/sensor/state
+    sys-online: lab/room1/sys/online
+
+logging:
+  level:
+    com.iot.backend: DEBUG
+    org.springframework.web: INFO
+    org.hibernate: INFO
+

@@ -20,6 +20,12 @@ dependencies:
   # State management
   provider: ^6.1.1
   
+  # HTTP client for REST API
+  http: ^1.1.0
+  
+  # Date formatting
+  intl: ^0.18.1
+  
   # UI components
   cupertino_icons: ^1.0.6
 

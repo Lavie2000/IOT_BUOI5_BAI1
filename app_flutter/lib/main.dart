@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:provider/provider.dart';
+import 'services/api_service.dart';
+import 'screens/device_list_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -59,174 +61,12 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// class MqttController extends ChangeNotifier {
-//   MqttServerClient? _client;
-//   bool _isConnected = false;
-//   bool _deviceOnline = false;
-//   String _lightState = 'off';
-//   String _fanState = 'off';
-//   String _rssi = '--';
-//   String _firmware = '--';
-//   String _lastUpdate = '--';
-//   double _temperature = 0.0;
-//   double _humidity = 0.0;
-//   // Light sensor removed - DHT11 only provides temp/humidity
-
-//   // MQTT Configuration - WebSocket
-//   // static const String _broker = '10.34.136.80';  // EMQX Broker IP
-
-//   //   static const String _broker = '192.168.1.2';  // SGP
-//   // static const int _port = 8083;  // WebSocket port for EMQX
-//   // static const String _topicNamespace = 'lab/room1';  // Match với ESP32
-//   // static const String _path = '/mqtt'; // thêm dòng này
-
-//  static const String _broker = '192.168.1.2'; // địa chỉ EMQX LAN
-//   static const int _port = 8083;               // WebSocket port
-//   static const String _path = '/mqtt';         // WebSocket path
-//   static const String _topicNamespace = 'lab/room1';
-//   static const String _username = 'admin';
-//   static const String _password = 'public';
-
-//   // Getters
-//   bool get isConnected => _isConnected;
-//   bool get deviceOnline => _deviceOnline;
-//   String get lightState => _lightState;
-//   String get fanState => _fanState;
-//   String get rssi => _rssi;
-//   String get firmware => _firmware;
-//   String get lastUpdate => _lastUpdate;
-//   double get temperature => _temperature;
-//   double get humidity => _humidity;
-//   // Light level getter removed
-
-// Future<void> connect() async {
-//   try {
-//     final clientId = 'flutter_mobile_${DateTime.now().millisecondsSinceEpoch}';
-//     _client = MqttServerClient.withPort('ws://192.168.1.2/mqtt', clientId, 8083);
-
-//     _client!.useWebSocket = true; // ✅ Bắt buộc để bật WebSocket
-//     _client!.websocketProtocols = ['mqtt'];
-//     _client!.keepAlivePeriod = 60;
-//     _client!.connectTimeoutPeriod = 10000;
-//     _client!.autoReconnect = true;
-//     _client!.logging(on: true);
-
-//     _client!.onConnected = _onConnected;
-//     _client!.onDisconnected = _onDisconnected;
-//     _client!.onSubscribed = _onSubscribed;
-
-//     final connMessage = MqttConnectMessage()
-//         .withClientIdentifier(clientId)
-//         .startClean()
-//         .withWillQos(MqttQos.atLeastOnce);
-
-//     _client!.connectionMessage = connMessage;
-
-//     print('🔄 Connecting to WebSocket MQTT: ws://192.168.1.2:8083/mqtt');
-//     await _client!.connect('admin', 'public');
-
-//     if (_client!.connectionStatus!.state == MqttConnectionState.connected) {
-//       print('✅ Connected to EMQX via WebSocket');
-//       _isConnected = true;
-
-//       _client!.subscribe('lab/room1/device/state', MqttQos.atLeastOnce);
-//       _client!.subscribe('lab/room1/sensor/state', MqttQos.atMostOnce);
-//       _client!.subscribe('lab/room1/sys/online', MqttQos.atLeastOnce);
-
-//       _client!.updates!.listen(_onMessage);
-//     } else {
-//       print('⚠️ Connection failed - state: ${_client!.connectionStatus?.state}');
-//     }
-//   } catch (e) {
-//     print('❌ MQTT WebSocket connection error: $e');
-//   }
-// }
-
-//   void _onConnected() {
-//     print('✅ MQTT Connected');
-//     _isConnected = true;
-//     notifyListeners();
-//   }
-
-//   void _onDisconnected() {
-//     print('❌ MQTT Disconnected');
-//     _isConnected = false;
-//     _deviceOnline = false;
-//     notifyListeners();
-//   }
-
-//   void _onSubscribed(String topic) {
-//     print('📡 Subscribed to: $topic');
-//   }
-
-//   void _onMessage(List<MqttReceivedMessage<MqttMessage>> messages) {
-//     for (final message in messages) {
-//       final topic = message.topic;
-//       final payload = MqttPublishPayload.bytesToStringAsString(
-//         (message.payload as MqttPublishMessage).payload.message,
-//       );
-
-//       print('📥 Received [$topic]: $payload');
-
-//       try {
-//         final data = jsonDecode(payload);
-
-//         if (topic.endsWith('/device/state')) {
-//           _lightState = data['light'] ?? 'unknown';
-//           _fanState = data['fan'] ?? 'unknown';
-//           _rssi = '${data['rssi'] ?? 0} dBm';
-//           _firmware = data['fw'] ?? '--';
-//           _lastUpdate = DateTime.now().toString().substring(11, 19);
-//         } else if (topic.endsWith('/sys/online')) {
-//           _deviceOnline = data['online'] ?? false;
-//         } else if (topic.endsWith('/sensor/state')) {
-//           _temperature = (data['temp_c'] ?? 0.0).toDouble();
-//           _humidity = (data['hum_pct'] ?? 0.0).toDouble();
-//           // Light level removed - DHT11 sensor only
-//         }
-
-//         notifyListeners();
-//       } catch (e) {
-//         print('❌ Error parsing message: $e');
-//       }
-//     }
-//   }
-
-//   void sendCommand(String device, String action) {
-//     if (!_isConnected || _client == null) {
-//       print('❌ MQTT not connected');
-//       return;
-//     }
-
-//     final command = {device: action};
-//     final payload = jsonEncode(command);
-//     final topic = '$_topicNamespace/device/cmd';
-
-//     final builder = MqttClientPayloadBuilder();
-//     builder.addString(payload);
-
-//     _client!.publishMessage(topic, MqttQos.atLeastOnce, builder.payload!);
-//     print('📤 Sent command [$topic]: $payload');
-//   }
-
-//   void toggleLight() {
-//     sendCommand('light', 'toggle');
-//   }
-
-//   void toggleFan() {
-//     sendCommand('fan', 'toggle');
-//   }
-
-//   @override
-//   void dispose() {
-//     _client?.disconnect();
-//     super.dispose();
-//   }
-// }
 
 class MqttController extends ChangeNotifier {
   // static const String _broker = '192.168.1.3'; // Địa chỉ EMQX LAN
   static const String _broker = '192.168.43.108'; // 3q1
+  // static const String _broker = '192.168.1.4'; // SGP
+
 
   static const int _port = 8083; // WebSocket port
   static const String _path = '/mqtt'; // WebSocket path
@@ -267,6 +107,7 @@ class MqttController extends ChangeNotifier {
       _client = MqttServerClient.withPort(
         // 'ws://192.168.1.3/mqtt',
         'ws://192.168.43.108/mqtt',
+        // 'ws://192.168.1.4/mqtt',
 
         clientId,
         8083,
@@ -376,6 +217,25 @@ class MqttController extends ChangeNotifier {
       builder.payload!,
     );
     print('📤 Sent command: $payload');
+    
+    // Log command to database via API
+    _logCommandToApi(device, action);
+  }
+
+  void _logCommandToApi(String deviceType, String action) async {
+    try {
+      final apiService = ApiService();
+      await apiService.logCommand(
+        'esp32_demo_001', 
+        action, 
+        deviceType, 
+        'flutter_app'
+      );
+      print('✅ Command logged to database');
+    } catch (e) {
+      print('⚠️ Failed to log command to database: $e');
+      // Don't stop the operation if logging fails
+    }
   }
 
   void toggleLight() => sendCommand('light', 'toggle');
@@ -425,6 +285,20 @@ class _IoTControllerPageState extends State<IoTControllerPage> {
                 ),
               ),
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.devices),
+                tooltip: 'Registered Devices',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DeviceListScreen(),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
           body: Container(
             decoration: BoxDecoration(
